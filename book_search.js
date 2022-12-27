@@ -19,13 +19,31 @@
  * @returns {JSON} - Search results.
  * */ 
  function findSearchTermInBooks(searchTerm, scannedTextObj) {
-    /** You will need to implement your search and 
-     * return the appropriate object here. */
 
     var result = {
         "SearchTerm": "",
         "Results": []
     };
+
+
+    // for each book in the scannedTextObj, for each page in the book, and for each word in the page,
+    // if the word matches the searchTerm, add the book, page, and line to the result object
+    scannedTextObj.forEach(book => { 
+        book.Content.forEach(page => {
+            page.Text.split(" ").forEach((word, index) => {
+                // matching is case-sensitive
+                if (word === searchTerm) {
+                    result.SearchTerm = searchTerm;
+                    result.Results.push({
+                        "ISBN": book.ISBN,
+                        "Page": page.Page,
+                        "Line": page.Line
+                    });
+                }
+            });
+        });
+    });
+
     
     return result; 
 }
