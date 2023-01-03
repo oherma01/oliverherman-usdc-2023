@@ -18,32 +18,45 @@
  * @param {JSON} scannedTextObj - A JSON object representing the scanned text.
  * @returns {JSON} - Search results.
  * */ 
- function findSearchTermInBooks(searchTerm, scannedTextObj) {
+function findSearchTermInBooks(searchTerm, scannedTextObj) {
 
     var result = {
         "SearchTerm": "",
         "Results": []
     };
 
+    // store temp ISBN
+    var tempISBN = "";
 
-    // for each book in the scannedTextObj, for each page in the book, and for each word in the page,
-    // if the word matches the searchTerm, add the book, page, and line to the result object
-    scannedTextObj.forEach(book => { 
-        book.Content.forEach(page => {
-            page.Text.split(" ").forEach((word, index) => {
-                // matching is case-sensitive
-                if (word === searchTerm) {
-                    result.SearchTerm = searchTerm;
-                    result.Results.push({
-                        "ISBN": book.ISBN,
-                        "Page": page.Page,
-                        "Line": page.Line
-                    });
+
+    // recursively search through scannedTextObj, looking for Text that contains searchTerm (case sensitive)
+    // If found, add the ISBN, Page, and Line to the result object.
+
+    function search(obj) {
+        // get ISBN
+        if (obj.hasOwnProperty("ISBN")) {
+            tempISBN = obj.ISBN;
+        }
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                if (key == "Text") {
+                    // matching is case sensitive
+                    if (obj[key].includes(searchTerm)) {
+                        result.SearchTerm = searchTerm;
+                        result.Results.push({
+                            "ISBN": tempISBN,
+                            "Page": obj.Page,
+                            "Line": obj.Line
+                        });
+                    }
+                } else if (typeof obj[key] == "object") {
+                    search(obj[key]);
                 }
-            });
-        });
-    });
+            }
+        }
+    }
 
+    search(scannedTextObj);
     
     return result; 
 }
@@ -119,4 +132,38 @@ if (test2result.Results.length == 1) {
     console.log("FAIL: Test 2");
     console.log("Expected:", twentyLeaguesOut.Results.length);
     console.log("Received:", test2result.Results.length);
+}
+
+/** We would also want to test that matched results consider case. 
+ * e.g. "the" should not match "The"
+*/
+const test3result = findSearchTermInBooks("Asked", twentyLeaguesIn);
+if (test3result.Results.length == 0) {
+    console.log("PASS: Test 3");
+} else {
+    console.log("FAIL: Test 3");
+    console.log("Expected:", 0);
+    console.log("Received:", test3result.Results.length);
+}
+
+/** We should test that input matches our specified schema. */
+// check that the input object has the fields we expect
+const test4result = twentyLeaguesIn;
+if (test4result[0].hasOwnProperty("Title") && test4result[0].hasOwnProperty("ISBN") && test4result[0].hasOwnProperty("Content")) {
+    console.log("PASS: Test 4");
+} else {
+    console.log("FAIL: Test 4");
+    console.log("Expected:", "Title, ISBN, and Content");
+    console.log("Received:", test4result);
+}
+
+/** We should test that output matches our specified schema. */
+// check that the output object has the fields we expect
+const test5result = findSearchTermInBooks("the", twentyLeaguesIn);
+if (test5result.hasOwnProperty("SearchTerm") && test5result.hasOwnProperty("Results")) {
+    console.log("PASS: Test 5");
+} else {
+    console.log("FAIL: Test 5");
+    console.log("Expected:", "SearchTerm and Results");
+    console.log("Received:", test5result);
 }
